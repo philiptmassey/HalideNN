@@ -14,7 +14,7 @@ Halide::Func convolution_layer(Halide::Func input, Halide::Func W,
     convolution(x, y, z, i) += W(conv_r.x, conv_r.y, conv_r.z, z) *
         input(x + conv_r.x, y + conv_r.y, conv_r.z, i);
 
-    pool(x, y, z, i) = 0.0f;
+    pool(x, y, z, i) = -1000000.0f;
     pool(x, y, z, i) = Halide::max(convolution(pool_size * x + pool_r.x,
         pool_size * y + pool_r.y, z, i), pool(x, y, z, i));
 
@@ -56,8 +56,8 @@ Halide::Func fully_connected_layer(Halide::Func input, Halide::Func W,
     Halide::RDom r(0, num_input_nodes);
 
     product(x, y, i) = 0.0f;
-    product(x, 0, i) += W(r.x, x) * input(r.x, y, i);
-    product(x, y, i) = tanh(product(x, y, i) + b(x, 0));
+    product(x, 0, i) += W(x, r.x) * input(r.x, 0, i);
+    product(x, 0, i) = tanh(product(x, 0, i) + b(x, 0));
 
     //product.vectorize(x, 4);
 
@@ -66,12 +66,12 @@ Halide::Func fully_connected_layer(Halide::Func input, Halide::Func W,
 
 Halide::Func softmax_layer(Halide::Func input, int num_input_nodes) {
 
-    Halide::Func softmax;
+    Halide::Func transform, softmax;
     Halide::Var x, y, i;
     Halide::RDom r(0, num_input_nodes);
 
-    softmax(x, y, i) = exp(input(x, y, i)):
-    softmax(x, y, i) = Halide::argmax(softmax(r.x, 0, i))[0];
+    transform(x, y, i) = exp(input(x, y, i));
+    softmax(x, y, i) = Halide::argmax(transform(r.x, 0, i))[0];
 
     return softmax;
 }
